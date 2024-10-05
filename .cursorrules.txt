@@ -1,0 +1,33 @@
+# Project: 
+Transcribing audio and combining it with images to provide a guide for the visually impaired.
+
+
+# Tech stack
+whisper-v3-large-turbo
+transcribe and generate audio
+pixtral for vision
+
+
+
+# Desired file structure
+├── README.md
+├── backend
+│   ├── api_server.py  # This shouldn't be an api server but seperate function that are called in the main file
+│   ├── main.py
+│   ├── routes
+│   │   └── mistral_api.py
+│   └── utils
+│       ├── audio_processing.py
+│       ├── chat_processing.py
+│       ├── image_processing.py
+│       ├── reduce_img.py
+│       └── whisper_setup.py
+└── main.py
+
+# Desired functionality
+##End point 1
+/transcribe endpoint using whisper-v3-large-turbo to transcribe streamed audio 
+
+##End point 2
+The transcribed audio should be used for the /guide endpoint.  
+/guide uses pixtral with a streamed image in order to provide guidelines for a visually impaired person. 
