@@ -16,15 +16,16 @@ async def process_audio(file: UploadFile = File(...)):
         
         # Transcribe audio
         transcription, timestamps = whisper_service.transcribe(audio_data)
-        print(transcription)
+        # print(transcription)
         
-        # Process transcription with Mistral
-        mistral_response = mistral_service.process_transcription(transcription, timestamps)
-        print(mistral_response)
+        #TODO: ADD MISTRAL SERVICE FOR THE IMAGES HERE> 
+        # # Process transcription with Mistral
+        # mistral_response = mistral_service.process_transcription(transcription, timestamps)
+        # print(mistral_response)
         
         return {
             "transcription": transcription,
-            "mistral_response": mistral_response
+            # "mistral_response": mistral_response
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
