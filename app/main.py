@@ -38,24 +38,13 @@ async def startup_event():
                 raise ValueError(f"Failed to encode image: {path}")
     except Exception as e:
         print(f"Error during startup: {str(e)}")
-        # You might want to exit the application here if image encoding is critical
-        # import sys
-        # sys.exit(1)
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Vision-Impaired Assistance Application"}
 
-# The main processing logic can be moved to a separate endpoint or service method
-# For example:
-# @app.post("/process")
-# async def process_request(request: SomeRequestModel):
-#     # Process audio
-#     # Analyze images
-#     # Generate response using Mistral
-#     # Return structured response
-#     pass
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    # uvicorn.run(app, host="0.0.0.0", port=5454)
