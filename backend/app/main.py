@@ -6,6 +6,7 @@ import cv2  # Added OpenCV for faster image processing
 from functools import lru_cache  # For efficient caching
 from mistralai import Mistral
 from dotenv import load_dotenv
+from whisper_setup import setup_whisper, transcribe_audio
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +23,8 @@ model = "mistral-small-latest"  # You can adjust this as needed
 client = Mistral(api_key=api_key)
 
 # Task definition
-task = """Hey, I would like to get myself a coffee. Can you help me please."""
+# task = """Hey, I would like to get myself a coffee. Can you help me please."""
+
 
 # Define desired dimensions for resizing
 DESIRED_WIDTH, DESIRED_HEIGHT = 800, 600
@@ -85,6 +87,22 @@ if base64_img_live is None:
     raise ValueError(f"Failed to encode image: {live_image_path}")
 
 
+# Initialize Whisper model
+whisper_pipe = setup_whisper()
+
+# Loop through audio files
+for i in range(1, 3):  
+    audio_file_path = f"/Users/raoulritter/mistral-a16z-hackathon/backend/app/data/live/audio/audio{i}.mp3"  # Replace with actual path
+    with open(audio_file_path, "rb") as audio_file:
+        audio_data = audio_file.read()
+
+    # Transcribe audio
+    transcription, timestamps = transcribe_audio(whisper_pipe, audio_data)
+
+
+    task = transcription
+    print(task)
+# print(transcription, timestamps)
 
 # Specify model
 model = "pixtral-12b-2409"
@@ -110,7 +128,7 @@ messages = [
 
             ```{{
             "current_location": "Dining Area",
-            "target_task": "Get Coffee",
+            "target_task": "{task}",
             "plan": [
                 {{
                 "step_number": 1,
@@ -141,6 +159,7 @@ messages = [
     - Ensure that each step in the plan is clear and actionable.
     - If there are multiple ways to perform a step, choose the most efficient one based on the floor plan.
     - If additional information is required to complete the task, indicate what is needed.
+    - Provide detailed navigation instructions similar to Google Maps, including turns and approximate distances in steps.
 
     Please generate the structured JSON response based on the above instructions.
 """
@@ -178,6 +197,9 @@ if json_output.strip():
             json_output = json_output[len('```json'): -3].strip()
         task_data = json.loads(json_output.strip())
         print(task_data['current_location'])
+        print(task_data['target_task'])
+        print(task_data['plan'])
+        print(task_data['current_action'])
         # Save the task_data to a variable or database
         # Example:
         # current_task = task_data
