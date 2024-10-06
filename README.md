@@ -4,7 +4,7 @@ This project is a Vision-Impaired Assistance Application that uses advanced AI m
 
 ## Features👨‍🦯
 
-- Audio transcription using Whisper model
+- Audio transcription using the whipser-v3-turbo model
 
 - Image processing and analysis
 
@@ -22,9 +22,9 @@ This project is a Vision-Impaired Assistance Application that uses advanced AI m
 
   - OpenAI Whisper (for speech recognition)
 
-  - Pixtral by Moistral AI (for natural language processing and task understanding)
+  - Pixtral by Mistral AI (for natural language processing and task understanding)
 
 - Image Processing: OpenCV
 
-- Frontend and input loadinga
+- Frontend and input loading
     React and NextJs. 
