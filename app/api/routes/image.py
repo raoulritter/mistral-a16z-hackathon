@@ -1,14 +1,17 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from utils.image_processing import get_cached_image, reduce_image_size, encode_image
 from core.config import settings
 from pydantic import BaseModel
 from .audio import process_audio
 from services.mistral_service import mistral_service
+import os
+import time  # Add this import at the top of the file
 
 router = APIRouter()
 
 # Global variable to store the floorplan
 floorplan_base64 = None
+
 
 class NavigationRequest(BaseModel):
     task: str
@@ -39,52 +42,81 @@ async def process_live_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Failed to process live image")
     return {"image": base64_live_image}
 
-# @router.post("/navigate")
-# async def navigate(request: NavigationRequest):
-#     print("Navigating")
-#     # Get the floorplan and live images
-#     floorplan_path = settings.FLOORPLAN_IMAGE_PATH
-#     live_image_path = settings.LIVE_IMAGE_PATH
-    
-#     base64_floorplan = get_cached_image(floorplan_path)
-#     base64_live_image = get_cached_image(live_image_path)
-    
-#     if base64_floorplan is None or base64_live_image is None:
-#         raise HTTPException(status_code=500, detail="Failed to retrieve images")
-    
-#     # Process the audio file
-#     audio_result = process_audio(request.audio_file_path)
-#     if "error" in audio_result:
-#         raise HTTPException(status_code=500, detail=audio_result["error"])
-    
-#     transcription = audio_result["transcription"]
-    
-#     # Call Mistral service with images and transcription
-#     result = mistral_service.process_task(request.task, base64_floorplan, base64_live_image, transcription)
-    
-#     return {
-#         "navigation": result,
-#         "transcription": transcription
-#     }
-
 @router.post("/navigate")
-async def navigate(request: NavigationRequest):
+async def navigate(task: str = Form(...)):
+    print("Task: ", task)
     global floorplan_base64
     if floorplan_base64 is None:
         raise HTTPException(status_code=500, detail="Floorplan not loaded")
+    # transcription = "Help me find the fire exit"
+    transcription = task
+    # FOR DEMO PURPOSES, WE ARE USING A static folder as we can't access the live video feed
+    # due to rate limiting on the API side.
+    image_path = '/Users/achilleasdrakou/Documents/GitHub/mistral-a16z-hackathon/images'
     
-    contents = await request.live_image.read()
-    base64_live_image = encode_image(contents)
-    if base64_live_image is None:
-        raise HTTPException(status_code=500, detail="Failed to process live image")
+    results = []
     
-    # Process the task with Mistral service
-    result = mistral_service.process_task(request.task, floorplan_base64, base64_live_image)
+    # Iterate through all images in the directory
+    for filename in sorted(os.listdir(image_path)):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            floorplan_path = settings.FLOORPLAN_IMAGE_PATH
+            floorplan_base64 = get_cached_image(floorplan_path)
+            file_path = os.path.join(image_path, filename)
+            
+            # Read the image file
+            with open(file_path, "rb") as image_file:
+                contents = image_file.read()
+                print(filename)
+            
+            base64_live_image = encode_image(contents)
+            if base64_live_image is None:
+                raise HTTPException(status_code=500, detail=f"Failed to process live image: {filename}")
+            
+            # Process the task with Mistral service for each frame
+            
+            result = mistral_service.process_task(task, floorplan_base64, base64_live_image, transcription)
+            results.append({"frame": filename, "navigation": result})
+            
+            # Add a 3-second delay after processing each frame
+            time.sleep(3)
     
     return {
-        "navigation": result
+        "frames": results,
+        "transcription": transcription
     }
 
+
+
+# BELOW IS THE ROUTE FOR THE LIVE VIDEO FEED
+
+# @router.post("/navigate")
+# async def navigate(task: str = Form(...), video_file: UploadFile = File(...)):
+    # global floorplan_base64
+    # if floorplan_base64 is None:
+    #     raise HTTPException(status_code=500, detail="Floorplan not loaded")
+    
+    # # Process the audio file
+    # audio_data = await audio_file.read()
+    # audio_result = await process_audio(audio_file)
+    # if "error" in audio_result:
+    #     raise HTTPException(status_code=500, detail=audio_result["error"])
+    
+    # transcription = audio_result["transcription"]
+    
+    
+    
+   
+    # base64_live_image = encode_image(contents)
+    # if base64_live_image is None:
+    #     raise HTTPException(status_code=500, detail="Failed to process live image")
+    
+    # # Process the task with Mistral service
+    # result = mistral_service.process_task(task, floorplan_base64, base64_live_image, transcription)
+    
+    # return {
+    #     "navigation": result,
+    #     "transcription": transcription
+    # }
 
 @router.post("/reduce")
 async def reduce_image(input_path: str, output_path: str, width: int = 400, height: int = 300, quality: int = 75):

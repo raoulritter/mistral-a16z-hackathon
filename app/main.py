@@ -26,13 +26,14 @@ app.include_router(image.router, prefix="/image", tags=["image"])
 
 # Paths to your images
 reduced_image_path = "data/preload/floorplan_reduced.jpg"
-live_image_path = "data/live/live1_r2.jpg"
+# live_image_path = "data/live/live1_r2.jpg"
 
 @app.on_event("startup")
 async def startup_event():
     try:
         # Encode images on startup
-        for path in [reduced_image_path, live_image_path]:
+        for path in [reduced_image_path]:
+        # for path in [reduced_image_path, live_image_path]:
             base64_image = get_cached_image(path)
             if base64_image is None:
                 raise ValueError(f"Failed to encode image: {path}")

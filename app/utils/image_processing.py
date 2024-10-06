@@ -1,6 +1,15 @@
 import os
 import cv2
 import base64
+import cv2
+import numpy as np
+
+# Define desired dimensions for resizing
+DESIRED_WIDTH, DESIRED_HEIGHT = 800, 600
+DESIRED_SIZE = (DESIRED_WIDTH, DESIRED_HEIGHT)
+
+# Define JPEG quality (lower means faster encoding and smaller size)
+JPEG_QUALITY = 75
 
 def reduce_image_size(input_path, output_path, desired_width=400, desired_height=300, jpeg_quality=75):
     """
@@ -48,22 +57,75 @@ def reduce_image_size(input_path, output_path, desired_width=400, desired_height
         print(f"Error saving image: {e}")
         return False
 
-def encode_image(image_path):
     """
-    Encodes an image file to base64.
-
-    Parameters:
-    - image_path (str): The file path of the image to encode.
-
-    Returns:
-    - str: Base64 encoded string of the image, or None if encoding fails.
+    Encodes an image to a base64 string after resizing it to the desired dimensions.
+    Utilizes OpenCV for faster processing and caches the result for future use.
     """
-    try:
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
-    except Exception as e:
-        print(f"Error encoding image: {e}")
+    # if not os.path.exists(image_path):
+    #     pdb.set_trace()
+    #     print(f"Error: The file {image_path} was not found.")
+    #     return None
+
+    # Read the image using OpenCV
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: Failed to read image {image_path}.")
+        
         return None
+
+    # Check if resizing is necessary
+    if img.shape[1] != DESIRED_WIDTH or img.shape[0] != DESIRED_HEIGHT:
+        # Resize the image using INTER_AREA for downscaling
+        img = cv2.resize(img, DESIRED_SIZE, interpolation=cv2.INTER_AREA)
+
+    # Encode the image to JPEG format
+    success, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
+    if not success:
+        print(f"Error: Failed to encode image {image_path}.")
+        return None
+
+    # Convert the JPEG buffer to a base64 string
+    encoded_image = base64.b64encode(buffer).decode('utf-8')
+    return encoded_image
+
+
+def encode_image(image_input):
+    """
+    Encodes an image to a base64 string after resizing it to the desired dimensions.
+    Utilizes OpenCV for faster processing.
+    
+    :param image_input: Either a file path (str) or image data (bytes)
+    :return: Base64 encoded string of the image
+    """
+    if isinstance(image_input, str):
+        # If input is a file path, read the image using OpenCV
+        img = cv2.imread(image_input)
+    elif isinstance(image_input, bytes):
+        # If input is bytes, convert to numpy array and decode
+        nparr = np.frombuffer(image_input, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    else:
+        print("Error: Invalid input type for image.")
+        return None
+
+    if img is None:
+        print("Error: Failed to read image.")
+        return None
+
+    # Check if resizing is necessary
+    if img.shape[1] != DESIRED_WIDTH or img.shape[0] != DESIRED_HEIGHT:
+        # Resize the image using INTER_AREA for downscaling
+        img = cv2.resize(img, DESIRED_SIZE, interpolation=cv2.INTER_AREA)
+
+    # Encode the image to JPEG format
+    success, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
+    if not success:
+        print("Error: Failed to encode image.")
+        return None
+
+    # Convert the JPEG buffer to a base64 string
+    encoded_image = base64.b64encode(buffer).decode('utf-8')
+    return encoded_image
 
 def get_cached_image(image_path):
     """
