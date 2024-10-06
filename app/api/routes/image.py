@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from utils.image_processing import get_cached_image, reduce_image_size, encode_image
 from core.config import settings
 from pydantic import BaseModel
 from .audio import process_audio
 from services.mistral_service import mistral_service
+import os
 
 router = APIRouter()
 
 # Global variable to store the floorplan
 floorplan_base64 = None
+
 
 class NavigationRequest(BaseModel):
     task: str
@@ -33,6 +35,7 @@ async def get_floorplan():
 @router.post("/live")
 async def process_live_image(file: UploadFile = File(...)):
     contents = await file.read()
+    print("Contents: ", contents)
     base64_live_image = encode_image(contents)
     print("Base64 live image: ", base64_live_image)
     if base64_live_image is None:
@@ -67,24 +70,123 @@ async def process_live_image(file: UploadFile = File(...)):
 #         "transcription": transcription
 #     }
 
+# @router.post("/navigate")
+# async def navigate(task: str = Form(...), live_image: UploadFile = File(...)):
+#     global floorplan_base64
+#     if floorplan_base64 is None:
+#         raise HTTPException(status_code=500, detail="Floorplan not loaded")
+    
+#     contents = await request.live_image.read()
+#     base64_live_image = encode_image(contents)
+#     if base64_live_image is None:
+#         raise HTTPException(status_code=500, detail="Failed to process live image")
+    
+#     # Process the task with Mistral service
+#     result = mistral_service.process_task(request.task, floorplan_base64, base64_live_image)
+    
+#     return {
+#         "navigation": result
+#     }
+
+# @router.post("/navigate")
+# async def navigate(task: str = Form(...)):
+#     global floorplan_base64
+#     if floorplan_base64 is None:
+#         raise HTTPException(status_code=500, detail="Floorplan not loaded")
+    
+#     # Hardcode the live image path
+#     # live_image_path = "data/live/live1_r2.jpg"
+#     live_image_path = "/Users/raoulritter/mistral-a16z-hackathon/app/data/live/live1_r.jpg"
+    
+#     # Read the hardcoded image
+#     with open(live_image_path, "rb") as image_file:
+#         contents = image_file.read()
+    
+#     base64_live_image = encode_image(contents)
+#     if base64_live_image is None:
+#         raise HTTPException(status_code=500, detail="Failed to process live image")
+    
+#     # Process the task with Mistral service
+#     result = mistral_service.process_task(task, floorplan_base64, base64_live_image)
+    
+#     return {
+#         "navigation": result
+#     }
 @router.post("/navigate")
-async def navigate(request: NavigationRequest):
+async def navigate(task: str = Form(...)):
     global floorplan_base64
     if floorplan_base64 is None:
         raise HTTPException(status_code=500, detail="Floorplan not loaded")
     
-    contents = await request.live_image.read()
-    base64_live_image = encode_image(contents)
-    if base64_live_image is None:
-        raise HTTPException(status_code=500, detail="Failed to process live image")
+    # Process the audio file
+    # # audio_result = await process_audio(audio_file)
+    # if "error" in audio_result:
+    #     raise HTTPException(status_code=500, detail=audio_result["error"])
     
-    # Process the task with Mistral service
-    result = mistral_service.process_task(request.task, floorplan_base64, base64_live_image)
+    # transcription = audio_result["transcription"]
+    
+    # Directory containing the image frames
+    transcription = "Help me find the fire exit"
+    image_path = '/Users/raoulritter/mistral-a16z-hackathon/IMG_6794_frames'
+    
+    results = []
+    
+    # Iterate through all images in the directory
+    for filename in sorted(os.listdir(image_path)):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            # floorplan_path = settings.FLOORPLAN_IMAGE_PATH
+            # floorplan_base64 = get_cached_image(floorplan_path)
+            file_path = os.path.join(image_path, filename)
+            
+            # Read the image file
+            with open(file_path, "rb") as image_file:
+                contents = image_file.read()
+            
+            base64_live_image = encode_image(contents)
+            if base64_live_image is None:
+                raise HTTPException(status_code=500, detail=f"Failed to process live image: {filename}")
+            
+            # Process the task with Mistral service for each frame
+            result = mistral_service.process_task(task, floorplan_base64, base64_live_image, transcription)
+            results.append({"frame": filename, "navigation": result})
     
     return {
-        "navigation": result
+        "frames": results,
+        "transcription": transcription
     }
 
+# @router.post("/navigate")
+# async def navigate(task: str = Form(...), audio_file: UploadFile = File(...)):
+    # global floorplan_base64
+    # if floorplan_base64 is None:
+    #     raise HTTPException(status_code=500, detail="Floorplan not loaded")
+    
+    # # Process the audio file
+    # audio_data = await audio_file.read()
+    # audio_result = await process_audio(audio_file)
+    # if "error" in audio_result:
+    #     raise HTTPException(status_code=500, detail=audio_result["error"])
+    
+    # transcription = audio_result["transcription"]
+    
+    # # Hardcode the live image path
+    # live_image_path = "/Users/raoulritter/mistral-a16z-hackathon/app/data/live/live1_r.jpg"
+    
+    # # Read the hardcoded image
+    # with open(live_image_path, "rb") as image_file:
+    #     contents = image_file.read()
+    
+    # base64_live_image = encode_image(contents)
+    # if base64_live_image is None:
+    #     raise HTTPException(status_code=500, detail="Failed to process live image")
+    
+    # # Process the task with Mistral service
+    # result = mistral_service.process_task(task, floorplan_base64, base64_live_image, transcription)
+    
+    # return {
+    #     "navigation": result,
+    #     "transcription": transcription
+    # }
 
 @router.post("/reduce")
 async def reduce_image(input_path: str, output_path: str, width: int = 400, height: int = 300, quality: int = 75):
