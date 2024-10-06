@@ -1,4 +1,4 @@
-# Le Kellen 👨‍🦯 👩‍🦯
+# Le Kellen 👨‍🦯 👩‍🦯 - Part of HackUK - A16Z / Mistral AI hackathon
 
 This project is a Vision-Impaired Assistance Application that uses advanced AI models to help visually impaired individuals navigate their environment and perform tasks. The application processes audio input, live images, and floor plans to provide detailed navigation instructions and task assistance.
 
