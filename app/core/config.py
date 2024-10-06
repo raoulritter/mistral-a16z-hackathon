@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     PROJECT_VERSION: str = "0.1.0"
     MISTRAL_API_KEY: str
     LIVE_IMAGE_PATH: str = "data/live/live1.jpg"
-    FLOORPLAN_IMAGE_PATH: str = "data/preload/floorplan.jpg"
+    # FLOORPLAN_IMAGE_PATH: str = "data/preload/floorplan.jpg"
+    FLOORPLAN_IMAGE_PATH: str = "data/preload/floorplan2.jpeg"
 
     class Config:
         env_file = ".env"
