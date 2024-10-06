@@ -4,7 +4,7 @@ This project is a Vision-Impaired Assistance Application that uses advanced AI m
 
 ## Features👨‍🦯
 
-- Audio transcription using the whipser-v3-turbo model
+- Audio transcription using the whisper-v3-turbo model
 
 - Image processing and analysis
 
