@@ -28,3 +28,7 @@ This project is a Vision-Impaired Assistance Application that uses advanced AI m
 
 - Frontend and input loading
     React and NextJs. 
+
+Example of the frontentd
+
+<img width="1184" alt="Screenshot_2024-10-06_at_12 25 49" src="https://github.com/user-attachments/assets/8f862356-4829-4698-be94-580a9287d880">
